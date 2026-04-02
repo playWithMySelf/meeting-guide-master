@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XX汇报</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#dc2626',
+                        success: '#16a34a',
+                        warning: '#ea580c',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #dc2626;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+        
+        .photo-item {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .photo-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .audio-card {
+            transition: all 0.3s ease;
+        }
+        
+        .audio-card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .expand-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .expand-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .lightbox.active {
+            display: flex;
+        }
+        
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-content.expanded {
+            max-height: 5000px;
+        }
+        
+        .risk-high {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-left: 4px solid #dc2626;
+        }
+        
+        .risk-medium {
+            background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+            border-left: 4px solid #ea580c;
+        }
+        
+        .risk-low {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .section.visible {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 固定顶部导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-semibold text-primary hidden sm:block" id="nav-brand">会议总览</span>
+                </div>
+                <div class="flex space-x-6" id="nav-links">
+                    <!-- 由JS动态渲染 -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section 1: 会议概览 -->
+    <section id="overview" class="pt-24 pb-16 bg-gradient-to-br from-blue-50 to-white section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- 顶部横幅 -->
+            <div class="text-center mb-12">
+                <h1 id="page-title" class="text-4xl md:text-5xl font-bold text-primary mb-4"></h1>
+                <p id="page-subtitle" class="text-xl text-gray-600 font-medium"></p>
+                <p id="page-organizers" class="text text-gray-600 font-small"></p>
+            </div>
+            
+            <!-- 元信息条 -->
+            <div class="flex flex-wrap justify-center items-center gap-6 mb-12 text-gray-700" id="meta-info">
+                <!-- 由JS动态渲染 -->
+            </div>
+            
+            <!-- 核心摘要卡片组 -->
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- 会议议题卡片 -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-primary">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">会议议题</h3>
+                    </div>
+                    <ul class="space-y-3 text-gray-700" id="meeting-topics">
+                        <!-- 由JS动态渲染 -->
+                    </ul>
+                </div>
+                
+                <!-- 演讲人信息卡片 -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-secondary">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">演讲嘉宾</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-700 text-sm" id="speaker-list">
+                        <!-- 由JS动态渲染 -->
+                    </ul>
+                </div>
+                
+                <!-- 核心结论卡片 -->
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-success">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">核心总结</h3>
+                    </div>
+                    <ul class="space-y-3 text-gray-700" id="core-summaries">
+                        <!-- 由JS动态渲染 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: 照片画廊 -->
+    <section id="photos" class="py-16 bg-white section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">会议照片</h2>
+                <p id="photo-desc" class="text-gray-600"></p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="photo-gallery">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: 录音详情 -->
+    <section id="audios" class="py-16 bg-gray-50 section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">录音详情</h2>
+                <p id="audio-desc" class="text-gray-600"></p>
+            </div>
+            
+            <div class="space-y-6" id="audio-list">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: 核心信息看板 -->
+    <section id="insights" class="py-16 bg-white section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">核心信息看板</h2>
+                <p class="text-gray-600">基于会议纪要提取的关键信息汇总</p>
+            </div>
+            
+            <!-- 会议议题与结论 -->
+            <div class="mb-12">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                    会议议题与结论
+                </h3>
+                <div class="relative pl-8 border-l-2 border-blue-200 space-y-6" id="timeline-container">
+                    <!-- 由JS动态渲染 -->
+                </div>
+            </div>
+            
+            <!-- 发言人观点摘要 -->
+            <div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 text-secondary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
+                    </svg>
+                    发言人观点摘要
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4" id="speaker-quotes">
+                    <!-- 由JS动态渲染 -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-primary text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p id="footer-text" class="text-gray-300"></p>
+            <p id="footer-date" class="text-sm text-gray-400 mt-2"></p>
+        </div>
+    </footer>
+
+    <!-- 灯箱 -->
+    <div id="lightbox" class="lightbox">
+        <button id="lightbox-close" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors">&times;</button>
+        <button id="lightbox-prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors">&#10094;</button>
+        <img id="lightbox-img" src="" alt="" class="rounded-lg shadow-2xl">
+        <button id="lightbox-next" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors">&#10095;</button>
+        <div id="lightbox-caption" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-lg font-medium"></div>
+    </div>
+
+    <!-- 引入数据文件（包含所有页面数据和录音详情数据） -->
+    <script src="data.js"></script>
+    <script>
+        let currentPhotoIndex = 0;
+
+        // ==================== 页面初始化 ====================
+
+        /** 渲染页面基本信息 */
+        function renderPageInfo() {
+            document.getElementById('page-title').textContent = pageTitle;
+            document.getElementById('page-subtitle').textContent = pageSubtitle;
+            document.getElementById('page-organizers').textContent = '整理人：' + organizers;
+            document.getElementById('photo-desc').textContent = '共' + photos.length + '张照片，记录培训精彩瞬间';
+            document.getElementById('audio-desc').textContent = audios.length + '个会议录音，包含完整转写和核心信息提取';
+            document.getElementById('footer-text').textContent = footerText;
+            document.getElementById('footer-date').textContent = footerDate;
+            document.title = pageTitle + '汇报';
+        }
+
+        /** 渲染导航栏链接 */
+        function renderNavLinks() {
+            const container = document.getElementById('nav-links');
+            container.innerHTML = navLinks.map(link =>
+                `<a href="${link.href}" class="nav-link text-gray-700 hover:text-primary font-medium transition-colors">${link.label}</a>`
+            ).join('');
+        }
+
+        /** 渲染元信息条（日期、地点、参会人员、录音数、照片数） */
+        function renderMetaInfo() {
+            const container = document.getElementById('meta-info');
+            const items = [
+                { icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', text: meetingDate, color: 'text-primary' },
+                { icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z', text: meetingLocation, color: 'text-primary' },
+                { icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', text: attendees, color: 'text-primary' },
+                { icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z', text: audioCount, color: 'text-accent' },
+                { icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', text: photoCount, color: 'text-secondary' }
+            ];
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 ${item.color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path>
+                    </svg>
+                    <span class="font-medium">${item.text}</span>
+                </div>
+            `).join('');
+        }
+
+        /** 渲染会议议题列表 */
+        function renderMeetingTopics() {
+            const container = document.getElementById('meeting-topics');
+            container.innerHTML = meetingTopics.map(topic => `
+                <li class="flex items-start">
+                    <span class="text-primary mr-2">●</span>
+                    <span>${topic}</span>
+                </li>
+            `).join('');
+        }
+
+        /** 渲染演讲嘉宾列表 */
+        function renderSpeakers() {
+            const container = document.getElementById('speaker-list');
+            container.innerHTML = speakers.map((s, i) => `
+                <li class="flex items-start">
+                    <span class="text-secondary mr-2 mt-0.5 font-bold">${i + 1}.</span>
+                    <div>
+                        <span class="font-medium">${s.name}</span>
+                        <span class="text-gray-500 text-xs ml-1">${s.title}</span>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        /** 渲染核心总结列表 */
+        function renderCoreSummaries() {
+            const container = document.getElementById('core-summaries');
+            container.innerHTML = coreSummaries.map((item, i) => `
+                <li class="flex items-start">
+                    <span class="text-success mr-2 mt-1">✓</span>
+                    <span>${item}</span>
+                </li>
+            `).join('');
+        }
+
+        /** 渲染会议议题与结论时间线 */
+        function renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = timelineItems.map(item => `
+                <div class="timeline-item relative pl-6">
+                    <div class="bg-white rounded-lg shadow-md p-5 border border-gray-200">
+                        <h4 class="text-base font-bold text-primary mb-2">${item.title}</h4>
+                        <div class="text-gray-700 mb-2">
+                            <p class="mb-1"><strong>讨论要点：</strong></p>
+                            <ul class="list-disc list-inside space-y-1 text-sm">
+                                ${item.points.map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-green-50 border-l-4 border-success p-2 rounded">
+                            <p class="text-sm text-gray-700"><strong>结论：</strong>${item.conclusion}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /** 渲染发言人观点摘要 */
+        function renderSpeakerQuotes() {
+            const container = document.getElementById('speaker-quotes');
+            container.innerHTML = speakerQuotes.map(q => `
+                <div class="bg-gradient-to-br from-blue-50 to-white rounded-lg shadow-md p-5 border-l-4 border-primary">
+                    <div class="flex items-center mb-2">
+                        <div class="w-9 h-9 bg-primary rounded-full flex items-center justify-center mr-3">
+                            <span class="text-white font-bold text-xs">${q.avatar}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm">${q.name}</h4>
+                            <p class="text-xs text-gray-600">${q.title}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 text-sm italic mb-2">"${q.quote}"</p>
+                    <a href="#audios" class="text-xs text-primary hover:text-blue-800 font-medium">查看录音${q.audioId} →</a>
+                </div>
+            `).join('');
+        }
+
+        // ==================== 照片画廊 ====================
+
+        /** 初始化照片画廊 */
+        function initPhotoGallery() {
+            const gallery = document.getElementById('photo-gallery');
+            photos.forEach((photo, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item relative rounded-lg overflow-hidden shadow-md cursor-pointer';
+                photoItem.innerHTML = `
+                    <img src="${photo}" alt="会议照片 ${index + 1}" 
+                         class="w-full h-48 object-cover" loading="lazy">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                        <span class="text-white text-sm font-medium">${index + 1}</span>
+                    </div>
+                `;
+                photoItem.addEventListener('click', () => openLightbox(index));
+                gallery.appendChild(photoItem);
+            });
+        }
+
+        // ==================== 录音列表 ====================
+
+        /** 将Markdown转换为HTML的简单函数 */
+        function markdownToHtml(text) {
+            return text
+                .replace(/^### (.*$)/gim, '<h4 class="text-base font-bold text-gray-800 mt-4 mb-2">$1</h4>')
+                .replace(/^## (.*$)/gim, '<h3 class="text-lg font-bold text-gray-800 mt-4 mb-2">$1</h3>')
+                .replace(/^# (.*$)/gim, '<h2 class="text-xl font-bold text-gray-800 mt-4 mb-3">$1</h2>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li class="ml-4">$1</li>')
+                .replace(/\n\n/g, '</p><p class="mb-3">')
+                .replace(/^/gm, '<p class="mb-3">')
+                .replace(/$/gm, '</p>')
+                .replace(/<p class="mb-3"><\/p>/g, '')
+                .replace(/<p class="mb-3"><li/g, '<li')
+                .replace(/<\/li><\/p>/g, '</li>');
+        }
+
+        /** 初始化录音列表 */
+        function initAudioList() {
+            const audioList = document.getElementById('audio-list');
+            audios.forEach(audio => {
+                const data = audioData[audio.id];
+                const audioCard = document.createElement('div');
+                audioCard.className = 'audio-card bg-white rounded-xl shadow-md overflow-hidden';
+                audioCard.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="bg-primary text-white text-sm font-bold px-3 py-1 rounded-full mr-3">${audio.id}</span>
+                                    <h3 class="text-xl font-bold text-gray-800">${audio.title}</h3>
+                                </div>
+                                ${audio.speaker ? `<p class="text-sm text-gray-600 ml-12">主讲：${audio.speaker}</p>` : ''}
+                            </div>
+                        </div>
+                        
+                        <audio controls class="w-full mb-4" preload="none">
+                            <source src="${audio.file}" type="audio/mpeg">
+                            您的浏览器不支持音频播放。
+                        </audio>
+                        
+                        <div class="space-y-3">
+                            <button class="expand-btn w-full text-left px-4 py-3 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors" onclick="toggleSummary(${audio.id})">
+                                <span class="font-medium text-gray-700">查看纪要（核心信息提取）</span>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform" id="summary-icon-${audio.id}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="summary-${audio.id}" class="collapsible-content">
+                                <div class="bg-blue-50 rounded-lg p-4 mt-2 prose prose-sm max-w-none">
+                                    ${data ? markdownToHtml(data.summary) : '<p class="text-gray-500">暂无内容</p>'}
+                                </div>
+                            </div>
+                            
+                            <button class="expand-btn w-full text-left px-4 py-3 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors" onclick="toggleTranscript(${audio.id})">
+                                <span class="font-medium text-gray-700">查看速览（完整转写）</span>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform" id="transcript-icon-${audio.id}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="transcript-${audio.id}" class="collapsible-content">
+                                <div class="bg-gray-50 rounded-lg p-4 mt-2 prose prose-sm max-w-none max-h-96 overflow-y-auto">
+                                    ${data ? markdownToHtml(data.transcript) : '<p class="text-gray-500">暂无内容</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                audioList.appendChild(audioCard);
+            });
+        }
+
+        // ==================== 展开/折叠功能 ====================
+
+        /** 切换概要显示 */
+        function toggleSummary(id) {
+            const content = document.getElementById(`summary-${id}`);
+            const icon = document.getElementById(`summary-icon-${id}`);
+            content.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+        }
+
+        /** 切换转写显示 */
+        function toggleTranscript(id) {
+            const content = document.getElementById(`transcript-${id}`);
+            const icon = document.getElementById(`transcript-icon-${id}`);
+            content.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+        }
+
+        // ==================== 灯箱功能 ====================
+
+        /** 打开灯箱 */
+        function openLightbox(index) {
+            currentPhotoIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            const caption = document.getElementById('lightbox-caption');
+            
+            img.src = `${photos[index]}`;
+            caption.textContent = `照片 ${index + 1} / ${photos.length}`;
+            lightbox.classList.add('active');
+        }
+
+        /** 关闭灯箱 */
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+        }
+
+        /** 上一张照片 */
+        function prevPhoto() {
+            currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+            openLightbox(currentPhotoIndex);
+        }
+
+        /** 下一张照片 */
+        function nextPhoto() {
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            openLightbox(currentPhotoIndex);
+        }
+
+        // ==================== 事件监听 ====================
+
+        // 灯箱按钮事件
+        document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+        document.getElementById('lightbox-prev').addEventListener('click', prevPhoto);
+        document.getElementById('lightbox-next').addEventListener('click', nextPhoto);
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') prevPhoto();
+                if (e.key === 'ArrowRight') nextPhoto();
+            }
+        });
+
+        // 点击灯箱背景关闭
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target.id === 'lightbox') closeLightbox();
+        });
+
+        /** 导航栏滚动高亮 */
+        function updateActiveNav() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (window.scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        /** 滚动动画 */
+        function handleScrollAnimation() {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                const sectionTop = section.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                if (sectionTop < windowHeight * 0.8) {
+                    section.classList.add('visible');
+                }
+            });
+        }
+
+        // ==================== 初始化入口 ====================
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // 渲染所有数据驱动的静态内容
+            renderPageInfo();
+            renderNavLinks();
+            renderMetaInfo();
+            renderMeetingTopics();
+            renderSpeakers();
+            renderCoreSummaries();
+            renderTimeline();
+            renderSpeakerQuotes();
+
+            // 初始化交互组件
+            initPhotoGallery();
+            initAudioList();
+            updateActiveNav();
+            handleScrollAnimation();
+        });
+
+        window.addEventListener('scroll', () => {
+            updateActiveNav();
+            handleScrollAnimation();
+        });
+    </script>
+</body>
+</html>
