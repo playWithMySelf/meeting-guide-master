@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <b>会议概览总结生成工具</b><br>
+  <b>会议概览总结生成工具 skill</b><br>
   根据会议录音和照片，一键生成精美的会议汇报网页
 </p>
 
@@ -191,3 +191,7 @@ themes/{theme-id}/
 <p align="center">
   如果这个项目对你有帮助，请给个 ⭐ Star！
 </p>
+
+## 友情链接
+
+- [linux.do](https://linux.do)
